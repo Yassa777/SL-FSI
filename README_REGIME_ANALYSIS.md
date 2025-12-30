@@ -19,13 +19,14 @@ This Streamlit application provides comprehensive analysis of the Sri Lanka Fina
 - Visual regime identification with color-coding
 - Regime statistics and characteristics
 
-### 📍 Bayesian Change Point Detection
+### 📍 Change Point Detection (PELT)
 - Identifies structural breaks in time series
-- Based on Adams & MacKay (2007) algorithm
-- Detects changes in mean and variance
-- Configurable detection threshold
+- Uses **ruptures** library with PELT algorithm (Pruned Exact Linear Time)
+- **Offline detection**: analyzes complete historical data
+- Multiple algorithms: PELT (optimal), Binary Segmentation (fast), Window-based (local)
+- Multiple cost models: L2 (mean shift), RBF (mean+variance), Linear (trends), Rank (distribution)
+- Configurable penalty and minimum segment size
 - Before/after statistics for each change point
-- Probability-based detection
 
 ### 📈 Combined View
 - Overlay HMM regimes and change points
@@ -134,11 +135,13 @@ The app automatically marks key crisis events:
 - Supports 2-5 hidden states
 - Viterbi algorithm for state inference
 
-### Bayesian Change Point Detection
-- Online algorithm (Adams & MacKay 2007)
-- Detects changes in mean and variance
-- Hazard rate controls sensitivity
-- Returns probability distribution over change points
+### Change Point Detection
+- **IMPORTANT**: This is an offline algorithm (not online/real-time)
+- Uses `ruptures` library - battle-tested implementation
+- PELT algorithm: optimal for multiple changepoints
+- Alternative algorithms: Binary Segmentation, Window-based
+- Cost models: L2 (mean), RBF (mean+variance), Linear (trend), Rank (distribution)
+- Penalty parameter controls sensitivity (higher = fewer, more confident breaks)
 
 ## Tips
 
@@ -165,5 +168,6 @@ Potential enhancements:
 
 ## References
 
-- Adams, R. P., & MacKay, D. J. (2007). Bayesian online changepoint detection. arXiv preprint arXiv:0710.3742.
+- Killick, R., Fearnhead, P., & Eckley, I. A. (2012). Optimal detection of changepoints with a linear computational cost. Journal of the American Statistical Association, 107(500), 1590-1598. (PELT algorithm)
+- Truong, C., Oudre, L., & Vayatis, N. (2020). Selective review of offline change point detection methods. Signal Processing, 167, 107299. (ruptures library)
 - Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. Proceedings of the IEEE, 77(2), 257-286.

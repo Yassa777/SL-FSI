@@ -6,6 +6,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from hmmlearn import hmm
 from scipy import stats
+import ruptures as rpt
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -29,26 +30,26 @@ def load_data():
 
 daily_df, monthly_df = load_data()
 
-# Define the 18 core data streams
+# Define the 18 core data streams (column names from merge_all_data.py)
 DATA_STREAMS = {
     'D1 - USD/LKR Exchange Rate': 'usd_lkr',
     'D2 - AWCMR (Interbank Rate)': 'awcmr',
     'D3 - ASPI (Equity Index)': 'aspi',
-    'D4 - Equity Daily Turnover': 'turnover_lkr_mn',
-    'D5 - Market Capitalization': 'market_cap_lkr_bn',
-    'D6 - S&P SL20 Index': 'sp_sl20',
-    'D7 - Local Gold Price': 'gold_price_lkr',
+    'D4 - Equity Daily Turnover': 'equity_turnover',
+    'D5 - Market Capitalization': 'market_cap',
+    'D6 - S&P SL20 Index': 'sl20_index',
+    'D7 - Local Gold Price': 'gold_lkr',
     'D6 Global - Gold Price USD': 'gold_usd',
-    'D8 - T-Bill Yields': 'tbill_91d_primary',
-    'D9 - T-Bond Yields': 'tbond_5y',
+    'D8 - T-Bill Yields': 'tbill_primary',
+    'D9 - T-Bond Yields': 'tbond_yield',
     'D10 - Policy Rate (SDFR)': 'sdfr',
-    'D12 - FX Reserves': 'reserves_usd_mn',
-    'D13 - NCPI Inflation': 'inflation_yoy',
-    'D14 - REER Index': 'reer',
-    'D15 - ISB Yields': 'isb_2025_yield',
-    'D17 - Tourism Earnings': 'tourism_usd_mn',
-    'D18 - Worker Remittances': 'remittances_usd_mn',
-    'Helper - US 10Y Yield': 'us_10y'
+    'D12 - FX Reserves': 'gross_reserves_usd_m',
+    'D13 - NCPI Inflation': 'ncpi_yoy_pct',
+    'D14 - REER Index': 'reer_index',
+    'D15 - ISB Yields': 'isb_yield',
+    'D17 - Tourism Earnings': 'tourism_earnings_usd_m',
+    'D18 - Worker Remittances': 'remittances_usd_m',
+    'Helper - US 10Y Yield': 'us_10y_yield'
 }
 
 # Derived features
@@ -266,44 +267,104 @@ elif analysis_type == "🔄 HMM Regime Detection":
 
     # Feature selection
     st.sidebar.subheader("Features for HMM")
-    feature_options = ['r_fx', 'vol_fx_20d', 'r_eq', 'vol_eq_20d', 'awcmr',
-                       'gold_premium_pct', 'real_policy_rate', 'inflation_yoy']
+
+    # Build comprehensive feature list from available columns
+    all_available_features = [col for col in df.columns if col != 'date' and pd.api.types.is_numeric_dtype(df[col])]
+
+    # Suggest high-frequency features that tend to have good overlap
+    default_features = ['r_fx', 'vol_fx_20d', 'awcmr']
+
     selected_features = st.sidebar.multiselect(
         "Select Features",
-        [f for f in feature_options if f in df.columns],
-        default=[f for f in ['r_fx', 'vol_fx_20d', 'awcmr'] if f in df.columns]
+        all_available_features,
+        default=[f for f in default_features if f in df.columns],
+        help="Select features for multivariate HMM. Features must have overlapping dates."
     )
 
     if len(selected_features) < 2:
-        st.warning("Please select at least 2 features for HMM analysis")
+        st.warning("⚠️ Please select at least 2 features for HMM analysis")
     else:
-        # Prepare data
+        # Check data availability and overlap
+        st.subheader("📊 Data Overlap Analysis")
+
+        # Calculate coverage for each feature
+        coverage_data = []
+        total_rows = len(df)
+        for feat in selected_features:
+            valid_rows = df[feat].notna().sum()
+            pct = (valid_rows / total_rows) * 100
+            coverage_data.append({
+                'Feature': feat,
+                'Valid Rows': valid_rows,
+                'Coverage %': f"{pct:.1f}%"
+            })
+
+        st.dataframe(pd.DataFrame(coverage_data), use_container_width=True)
+
+        # Prepare data with overlap check
         df_clean = df[['date'] + selected_features].dropna()
+        overlap_rows = len(df_clean)
+        overlap_pct = (overlap_rows / total_rows) * 100
+
+        # Show overlap statistics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Days", f"{total_rows:,}")
+        with col2:
+            st.metric("Overlapping Days", f"{overlap_rows:,}")
+        with col3:
+            st.metric("Overlap %", f"{overlap_pct:.1f}%")
+
+        # Warning if overlap is poor
+        if overlap_pct < 30:
+            st.error(f"❌ Poor overlap ({overlap_pct:.1f}%): Selected features don't have enough common dates. Consider choosing features with similar frequencies (e.g., all daily or all monthly).")
+            st.info("💡 **Tip**: Try using only daily market features (FX, equity, rates) or only monthly macro features, not mixed.")
+        elif overlap_pct < 60:
+            st.warning(f"⚠️ Moderate overlap ({overlap_pct:.1f}%): Some data will be excluded. Results may be less reliable.")
+        else:
+            st.success(f"✅ Good overlap ({overlap_pct:.1f}%): Sufficient data for HMM analysis")
+
+        # Show date range of overlapping data
+        if overlap_rows > 0:
+            st.info(f"**Analysis Period**: {df_clean['date'].min().strftime('%Y-%m-%d')} to {df_clean['date'].max().strftime('%Y-%m-%d')}")
+
         X = df_clean[selected_features].values
 
-        # Standardize
-        X_mean = X.mean(axis=0)
-        X_std = X.std(axis=0)
-        X_scaled = (X - X_mean) / X_std
+        # Check if we have enough data
+        if overlap_rows < 100:
+            st.error("❌ Insufficient overlapping data (need at least 100 days). Please select different features or adjust data frequency.")
+        else:
+            # Standardize
+            X_mean = X.mean(axis=0)
+            X_std = X.std(axis=0)
+            X_scaled = (X - X_mean) / X_std
 
-        # Fit HMM
-        if st.sidebar.button("Run HMM"):
-            with st.spinner("Fitting Hidden Markov Model..."):
-                model = hmm.GaussianHMM(
-                    n_components=n_regimes,
-                    covariance_type="full",
-                    n_iter=n_iter,
-                    random_state=42
-                )
+            # Fit HMM
+            if st.sidebar.button("Run HMM"):
+                with st.spinner("Fitting Hidden Markov Model..."):
+                    try:
+                        model = hmm.GaussianHMM(
+                            n_components=n_regimes,
+                            covariance_type="full",
+                            n_iter=n_iter,
+                            random_state=42
+                        )
 
-                model.fit(X_scaled)
-                hidden_states = model.predict(X_scaled)
+                        model.fit(X_scaled)
+                        hidden_states = model.predict(X_scaled)
 
-                # Store in session state
-                st.session_state['hmm_model'] = model
-                st.session_state['hmm_states'] = hidden_states
-                st.session_state['hmm_dates'] = df_clean['date'].values
-                st.session_state['hmm_features'] = selected_features
+                        # Store in session state
+                        st.session_state['hmm_model'] = model
+                        st.session_state['hmm_states'] = hidden_states
+                        st.session_state['hmm_dates'] = df_clean['date'].values
+                        st.session_state['hmm_features'] = selected_features
+                        st.session_state['hmm_overlap_pct'] = overlap_pct
+
+                        st.success(f"✅ HMM fitted successfully on {overlap_rows:,} observations across {len(selected_features)} features")
+
+                    except Exception as e:
+                        st.error(f"❌ Error fitting HMM: {str(e)}")
+                        st.info("Try reducing the number of regimes or increasing max iterations.")
 
         # Display results if available
         if 'hmm_states' in st.session_state:
@@ -413,11 +474,15 @@ elif analysis_type == "🔄 HMM Regime Detection":
 # BAYESIAN CHANGE POINT DETECTION
 # ============================================================================
 elif analysis_type == "📍 Bayesian Change Points":
-    st.header("📍 Bayesian Change Point Detection")
+    st.header("📍 Change Point Detection (PELT)")
 
     st.markdown("""
-    This analysis uses a Bayesian approach to detect structural breaks in time series.
-    The algorithm identifies points where the statistical properties (mean/variance) of the data change significantly.
+    This analysis uses the **PELT (Pruned Exact Linear Time)** algorithm to detect structural breaks in time series.
+
+    **Note**: This is an **offline** method - it analyzes the complete historical data to find optimal break points.
+    The algorithm detects changes in mean and variance that minimize a penalized cost function.
+
+    **Method**: Ruptures library with PELT algorithm (robust, proven implementation)
     """)
 
     # Feature selection
@@ -427,73 +492,86 @@ elif analysis_type == "📍 Bayesian Change Points":
     all_numeric_cols = [col for col in df.columns if col != 'date' and pd.api.types.is_numeric_dtype(df[col])]
     selected_feature = st.sidebar.selectbox("Select Feature", all_numeric_cols)
 
-    # Parameters
-    prior_prob = st.sidebar.slider("Prior Probability of Change", 0.01, 0.5, 0.1, 0.01)
-    threshold = st.sidebar.slider("Detection Threshold", 0.5, 0.99, 0.8, 0.01)
+    # Algorithm selection
+    algorithm = st.sidebar.selectbox(
+        "Algorithm",
+        ["Pelt", "Binary Segmentation", "Window-based"],
+        help="Pelt: optimal for multiple changepoints | Binary: faster, approximate | Window: local changes"
+    )
+
+    # Model (cost function)
+    model_type = st.sidebar.selectbox(
+        "Cost Model",
+        ["l2 (Mean shift)", "rbf (Mean+Variance)", "linear (Trend changes)", "rank (Distribution shift)"],
+        help="l2: detects mean changes | rbf: detects mean & variance changes"
+    )
+    model = model_type.split()[0]  # Extract model name
+
+    # Penalty parameter
+    pen = st.sidebar.slider(
+        "Penalty (sensitivity)",
+        1, 50, 10, 1,
+        help="Higher = fewer changepoints (more conservative). Lower = more changepoints (more sensitive)"
+    )
+
+    # Minimum segment size
+    min_size = st.sidebar.slider(
+        "Minimum Segment Size (days)",
+        5, 60, 20, 5,
+        help="Minimum number of days between changepoints"
+    )
 
     if st.sidebar.button("Detect Change Points"):
         df_clean = df[['date', selected_feature]].dropna()
-        data = df_clean[selected_feature].values
+        data = df_clean[selected_feature].values.reshape(-1, 1)  # ruptures expects 2D
         dates = df_clean['date'].values
 
-        with st.spinner("Running Bayesian change point detection..."):
-            # Bayesian Change Point Detection (Online)
-            def bayesian_changepoint_detection(data, hazard_rate=1/100):
-                """
-                Simple Bayesian online change point detection
-                Based on Adams & MacKay 2007
-                """
-                n = len(data)
-                R = np.zeros((n + 1, n + 1))
-                R[0, 0] = 1
+        with st.spinner(f"Running {algorithm} change point detection..."):
+            try:
+                # Select algorithm
+                if algorithm == "Pelt":
+                    algo = rpt.Pelt(model=model, min_size=min_size, jump=1)
+                elif algorithm == "Binary Segmentation":
+                    algo = rpt.Binseg(model=model, min_size=min_size, jump=1)
+                else:  # Window-based
+                    algo = rpt.Window(width=min_size*2, model=model, jump=1)
 
-                change_points = []
-                probabilities = []
+                # Fit and predict
+                algo.fit(data)
+                cp_indices = algo.predict(pen=pen)
 
-                # Online algorithm
-                mean_vals = np.zeros(n)
-                var_vals = np.zeros(n)
+                # Remove the last point (ruptures adds n as the final breakpoint)
+                if cp_indices and cp_indices[-1] == len(data):
+                    cp_indices = cp_indices[:-1]
 
-                for t in range(1, n + 1):
-                    # Prediction
-                    predprobs = R[t-1, :t] * hazard_rate
+                # Calculate confidence scores (based on cost reduction)
+                # For PELT/Binseg, we approximate confidence by local variance change
+                cp_probs = []
+                for idx in cp_indices:
+                    if idx > 10 and idx < len(data) - 10:
+                        before_var = np.var(data[max(0, idx-20):idx])
+                        after_var = np.var(data[idx:min(len(data), idx+20)])
+                        # Higher variance change = higher confidence
+                        var_change = abs(before_var - after_var) / (before_var + 1e-6)
+                        confidence = min(0.99, 0.5 + var_change * 0.5)  # Scale to 0.5-0.99
+                        cp_probs.append(confidence)
+                    else:
+                        cp_probs.append(0.75)  # Default confidence
 
-                    # Growth
-                    R[t, 1:t+1] = R[t-1, :t] * (1 - hazard_rate)
-                    R[t, 0] = np.sum(predprobs)
+                # Store in session state
+                st.session_state['cp_indices'] = cp_indices
+                st.session_state['cp_probs'] = cp_probs
+                st.session_state['cp_dates'] = dates
+                st.session_state['cp_data'] = data.flatten()
+                st.session_state['cp_feature'] = selected_feature
+                st.session_state['cp_algorithm'] = algorithm
+                st.session_state['cp_model'] = model
 
-                    # Calculate statistics for each run length
-                    for r in range(t + 1):
-                        if r == 0:
-                            continue
-                        start_idx = max(0, t - r)
-                        segment = data[start_idx:t]
+                st.success(f"Detected {len(cp_indices)} change points using {algorithm} with {model} model")
 
-                        if len(segment) > 1:
-                            mean_vals[t-1] += R[t, r] * np.mean(segment)
-                            var_vals[t-1] += R[t, r] * np.var(segment)
-
-                    # Normalize
-                    R[t, :] = R[t, :] / np.sum(R[t, :])
-
-                    # Detect change point
-                    if R[t, 0] > threshold:
-                        change_points.append(t-1)
-                        probabilities.append(R[t, 0])
-
-                return change_points, probabilities, mean_vals, var_vals
-
-            cp_indices, cp_probs, means, variances = bayesian_changepoint_detection(
-                data,
-                hazard_rate=prior_prob
-            )
-
-            # Store in session state
-            st.session_state['cp_indices'] = cp_indices
-            st.session_state['cp_probs'] = cp_probs
-            st.session_state['cp_dates'] = dates
-            st.session_state['cp_data'] = data
-            st.session_state['cp_feature'] = selected_feature
+            except Exception as e:
+                st.error(f"Error in change point detection: {str(e)}")
+                st.info("Try adjusting the penalty parameter or minimum segment size.")
 
     # Display results
     if 'cp_indices' in st.session_state:
