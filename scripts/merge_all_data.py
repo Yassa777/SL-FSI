@@ -32,14 +32,17 @@ OUTPUT_DIR = os.path.join(PROJECT_ROOT, 'data', 'merged')
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Date range for analysis
-START_DATE = '2018-01-01'
+# Date range for analysis - Extended to 2005 for out-of-sample validation
+# Training period: 2005-2019 (includes GFC 2008, BOP stress 2015)
+# Test period: 2020-2025 (includes COVID, 2022 Default)
+START_DATE = '2005-01-01'
 END_DATE = '2025-12-31'
 
 print("="*70)
-print("SL-FSI DATA MERGER")
+print("SL-FSI DATA MERGER (EXTENDED)")
 print("="*70)
 print(f"Date range: {START_DATE} to {END_DATE}")
+print("Historical extension enabled (2005-2017 data included)")
 
 # ============================================================
 # Helper Functions
@@ -78,13 +81,23 @@ if d1 is not None:
     d1 = d1[['date', 'usd_lkr']].dropna()
     print(f"  D1 USD/LKR: {len(d1)} rows")
 
-# D2: AWCMR (Interbank Rate)
-d2 = load_csv(os.path.join(PROCESSED_DIR, 'D2_awcmr.csv'))
-if d2 is not None:
-    d2 = d2.rename(columns={'Average_Weighted_Call_Money_Rate': 'awcmr'})
-    d2 = clean_numeric(d2)
-    d2 = d2[['date', 'awcmr']].dropna()
-    print(f"  D2 AWCMR: {len(d2)} rows")
+# D2: AWCMR (Interbank Rate) - Use extended monthly data from external
+# The awcmr_monthly_cbsl.csv has complete 2003-2025 coverage including crisis period
+awcmr_monthly = load_csv(os.path.join(EXTERNAL_DIR, 'awcmr_monthly_cbsl.csv'))
+if awcmr_monthly is not None:
+    awcmr_monthly = awcmr_monthly.rename(columns={'awcmr_monthly': 'awcmr'})
+    awcmr_monthly = clean_numeric(awcmr_monthly)
+    awcmr_monthly = awcmr_monthly[['date', 'awcmr']].dropna()
+    print(f"  AWCMR Monthly (Extended): {len(awcmr_monthly)} rows ({awcmr_monthly['date'].min().strftime('%Y-%m')} to {awcmr_monthly['date'].max().strftime('%Y-%m')})")
+    d2 = awcmr_monthly
+else:
+    # Fallback to processed D2 if external file not available
+    d2 = load_csv(os.path.join(PROCESSED_DIR, 'D2_awcmr.csv'))
+    if d2 is not None:
+        d2 = d2.rename(columns={'Average_Weighted_Call_Money_Rate': 'awcmr'})
+        d2 = clean_numeric(d2)
+        d2 = d2[['date', 'awcmr']].dropna()
+        print(f"  D2 AWCMR (Fallback): {len(d2)} rows")
 
 # D3: ASPI (Equity Index)
 d3 = load_csv(os.path.join(PROCESSED_DIR, 'D3_aspi.csv'))
@@ -228,6 +241,67 @@ if ust is not None:
     print(f"  US Treasury 10Y: {len(ust)} rows")
 
 # ============================================================
+# Load Historical Data (2005-2017 Extension)
+# ============================================================
+
+print("\n📊 Loading historical data (2005-2017 extension)...")
+
+# Historical Reserves
+hist_reserves = load_csv(os.path.join(EXTERNAL_DIR, 'historical_reserves.csv'))
+if hist_reserves is not None:
+    hist_reserves = hist_reserves[['date', 'gross_reserves_usd_m']].dropna()
+    print(f"  Historical Reserves: {len(hist_reserves)} rows ({hist_reserves['date'].min().strftime('%Y-%m')} to {hist_reserves['date'].max().strftime('%Y-%m')})")
+    # Merge with existing reserves (historical first, then current)
+    if reserves is not None:
+        # Remove overlap - keep current data where available
+        hist_reserves = hist_reserves[hist_reserves['date'] < reserves['date'].min()]
+        reserves = pd.concat([hist_reserves, reserves], ignore_index=True).sort_values('date')
+        print(f"    Combined reserves: {len(reserves)} rows")
+    else:
+        reserves = hist_reserves
+
+# Historical Inflation
+hist_inflation = load_csv(os.path.join(EXTERNAL_DIR, 'historical_inflation.csv'))
+if hist_inflation is not None:
+    hist_inflation = hist_inflation[['date', 'ncpi_yoy_pct']].dropna()
+    print(f"  Historical Inflation: {len(hist_inflation)} rows ({hist_inflation['date'].min().strftime('%Y-%m')} to {hist_inflation['date'].max().strftime('%Y-%m')})")
+    if inflation is not None:
+        hist_inflation = hist_inflation[hist_inflation['date'] < inflation['date'].min()]
+        inflation = pd.concat([hist_inflation, inflation], ignore_index=True).sort_values('date')
+        print(f"    Combined inflation: {len(inflation)} rows")
+    else:
+        inflation = hist_inflation
+
+# Historical FX
+hist_fx = load_csv(os.path.join(EXTERNAL_DIR, 'historical_fx.csv'))
+if hist_fx is not None:
+    hist_fx = hist_fx[['date', 'usd_lkr']].dropna()
+    print(f"  Historical USD/LKR: {len(hist_fx)} rows ({hist_fx['date'].min().strftime('%Y-%m')} to {hist_fx['date'].max().strftime('%Y-%m')})")
+    if d1 is not None:
+        hist_fx = hist_fx[hist_fx['date'] < d1['date'].min()]
+        d1 = pd.concat([hist_fx, d1], ignore_index=True).sort_values('date')
+        print(f"    Combined USD/LKR: {len(d1)} rows")
+    else:
+        d1 = hist_fx
+
+# Historical Policy Rates
+hist_policy = load_csv(os.path.join(EXTERNAL_DIR, 'historical_policy_rates.csv'))
+if hist_policy is not None:
+    hist_policy = hist_policy[['date', 'policy_ceiling']].dropna()
+    print(f"  Historical Policy Rates: {len(hist_policy)} rows ({hist_policy['date'].min().strftime('%Y-%m')} to {hist_policy['date'].max().strftime('%Y-%m')})")
+    if policy is not None:
+        hist_policy = hist_policy[hist_policy['date'] < policy['date'].min()]
+        # Need to add policy_ceiling to historical, and fill other columns with NaN
+        policy_combined = pd.concat([
+            hist_policy.assign(sdfr=np.nan, slfr=np.nan, opr=np.nan),
+            policy
+        ], ignore_index=True).sort_values('date')
+        policy = policy_combined
+        print(f"    Combined policy rates: {len(policy)} rows")
+    else:
+        policy = hist_policy.assign(sdfr=np.nan, slfr=np.nan, opr=np.nan)
+
+# ============================================================
 # Create Daily Date Spine
 # ============================================================
 
@@ -331,7 +405,23 @@ if 'gross_reserves_usd_m' in daily.columns:
     daily['reserve_slope_3m'] = daily['gross_reserves_usd_m'].rolling(90, min_periods=30).apply(safe_slope, raw=False)
     # Import cover (rough estimate using average monthly imports ~$1.5B)
     daily['import_cover_months'] = daily['gross_reserves_usd_m'] / 1500
-    print("  Created: reserve_slope_3m, import_cover_months")
+    
+    # Net usable reserves: Gross - PBOC swap ($1.5B from Mar 2021)
+    # The PBOC swap was not truly "usable" reserves as it was a currency swap facility
+    # Net reserves would have shown crisis 6-10 months earlier than gross
+    PBOC_SWAP_USD_M = 1500  # $1.5 billion PBOC swap facility
+    PBOC_SWAP_START = pd.Timestamp('2021-03-01')  # Approximate effective date
+    
+    daily['net_usable_reserves_usd_m'] = daily['gross_reserves_usd_m'].copy()
+    # Subtract PBOC swap only after it was in effect
+    pboc_mask = daily['date'] >= PBOC_SWAP_START
+    daily.loc[pboc_mask, 'net_usable_reserves_usd_m'] = (
+        daily.loc[pboc_mask, 'gross_reserves_usd_m'] - PBOC_SWAP_USD_M
+    )
+    # Net import cover
+    daily['net_import_cover_months'] = daily['net_usable_reserves_usd_m'] / 1500
+    
+    print("  Created: reserve_slope_3m, import_cover_months, net_usable_reserves_usd_m, net_import_cover_months")
 
 # 6. Interbank Stress Spread
 if 'awcmr' in daily.columns and 'policy_ceiling' in daily.columns:
@@ -408,16 +498,22 @@ for col in ['vol_fx_20d', 'vol_eq_20d']:
         agg_rules[col] = 'mean'
 
 # Macro: already monthly, take last
-for col in ['reer_index', 'gross_reserves_usd_m', 'ncpi_yoy_pct', 'tourism_earnings_usd_m', 'remittances_usd_m']:
+for col in ['reer_index', 'gross_reserves_usd_m', 'net_usable_reserves_usd_m', 'ncpi_yoy_pct', 'tourism_earnings_usd_m', 'remittances_usd_m']:
     if col in daily_indexed.columns:
         agg_rules[col] = 'last'
 
 # Derived: take last
-for col in ['gold_premium_pct', 'interbank_spread', 'real_policy_rate', 'yield_curve_slope', 'import_cover_months', 'embi_spread_approx', 'r_fx', 'r_eq', 'r_eq_real', 'turnover_ratio']:
+for col in ['gold_premium_pct', 'interbank_spread', 'real_policy_rate', 'yield_curve_slope', 
+            'import_cover_months', 'net_import_cover_months', 'embi_spread_approx', 
+            'r_fx', 'r_eq', 'r_eq_real', 'turnover_ratio']:
     if col in daily_indexed.columns:
         agg_rules[col] = 'last'
 
-monthly = daily_indexed.resample('ME').agg(agg_rules).reset_index()
+# Use 'M' for older pandas versions (2.1.x), 'ME' for newer (2.2+)
+try:
+    monthly = daily_indexed.resample('ME').agg(agg_rules).reset_index()
+except ValueError:
+    monthly = daily_indexed.resample('M').agg(agg_rules).reset_index()
 
 # ============================================================
 # Save Output
