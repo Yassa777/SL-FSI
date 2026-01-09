@@ -198,6 +198,14 @@ def calculate_debt_spread(yield_10y, yield_2y):
 **❓ DECISION POINT**: Sri Lanka yield curve data availability?
 - Option A: Use 10Y bond - 1Y T-bill
 - Option B: Use 5Y bond - 3M T-bill
+
+---
+
+## Implementation Notes (Data Hygiene + Fallbacks)
+
+- **ASPI/SL20 zero placeholders**: Zero values in `data/processed/D3_aspi.csv` and `data/processed/D6_D7_sl20_gold.csv` are treated as missing (set to NaN) before merging, since they coincide with non-trading days and break log-return calculations.
+- **Sovereign spread fallback**: If the T-bond/T-bill spread has fewer than 36 monthly observations, use `embi_spread_approx` (ISB yield - US 10Y, stored in bps and converted to percent in `mercado_fsi.py`). This improves coverage from late-2022-only to 2021-2024.
+- **Monthly sampling**: `mercado_fsi.py` now reads `data/merged/slfsi_monthly_panel.csv` directly to avoid month-start resampling artifacts from daily data.
 - Option C: Use available spread approximation
 
 ---

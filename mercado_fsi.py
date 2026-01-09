@@ -27,6 +27,7 @@ warnings.filterwarnings('ignore')
 ROLLING_WINDOW = 36  # 36-month rolling for beta calculation
 EMPI_LOOKBACK = 60   # 60-month rolling for EMPI standardization
 MIN_PERIODS = 12     # Minimum periods for rolling calculations
+DEBT_SPREAD_MIN_OBS = 36  # Minimum observations before trusting yield-curve spread
 
 # ============================================================
 # COMPONENT 1: BANKING SECTOR BETA
@@ -246,14 +247,15 @@ def aggregate_fsi_pca(components_df, n_components=1):
 # MAIN IMPLEMENTATION
 # ============================================================
 
-def compute_mercado_fsi(data, freq='M'):
+def compute_mercado_fsi(data, freq='M', data_is_monthly=False):
     """
     Compute the full Mercado-Park FSI.
 
     Parameters:
     -----------
-    data : DataFrame with daily data
+    data : DataFrame with daily or monthly data
     freq : 'M' for monthly, 'D' for daily
+    data_is_monthly : True if data is already monthly (skip resample)
 
     Returns:
     --------
@@ -265,8 +267,12 @@ def compute_mercado_fsi(data, freq='M'):
 
     # Convert to specified frequency
     if freq == 'M':
-        print(f"\nConverting to monthly frequency...")
-        df = data.set_index('date').resample('MS').first().reset_index()
+        if data_is_monthly:
+            print(f"\nUsing monthly panel directly...")
+            df = data.copy()
+        else:
+            print(f"\nConverting to monthly frequency...")
+            df = data.set_index('date').resample('MS').first().reset_index()
     else:
         df = data.copy()
 
@@ -354,7 +360,28 @@ def compute_mercado_fsi(data, freq='M'):
         components['debt_spread'] = spread.values
 
         valid = components['debt_spread'].notna().sum()
-        print(f"  Using: T-Bond yield - T-Bill secondary")
+        if valid >= DEBT_SPREAD_MIN_OBS:
+            print(f"  Using: T-Bond yield - T-Bill secondary")
+            print(f"  Valid observations: {valid}")
+            print(f"  Mean spread: {components['debt_spread'].mean()*100:.2f} bps")
+        elif 'embi_spread_approx' in df.columns:
+            # embi_spread_approx stored in bps; convert to percent for consistency
+            components['debt_spread'] = (df['embi_spread_approx'] / 100.0).values
+            valid = components['debt_spread'].notna().sum()
+            print(f"  Using: ISB yield - US 10Y (EMBI approx, fallback)")
+            print(f"  Valid observations: {valid}")
+            if valid > 0:
+                print(f"  Mean spread: {components['debt_spread'].mean()*100:.2f} bps")
+        else:
+            print(f"  Using: T-Bond yield - T-Bill secondary (sparse)")
+            print(f"  Valid observations: {valid}")
+            if valid > 0:
+                print(f"  Mean spread: {components['debt_spread'].mean()*100:.2f} bps")
+    elif 'embi_spread_approx' in df.columns:
+        # embi_spread_approx stored in bps; convert to percent for consistency
+        components['debt_spread'] = (df['embi_spread_approx'] / 100.0).values
+        valid = components['debt_spread'].notna().sum()
+        print(f"  Using: ISB yield - US 10Y (EMBI approx)")
         print(f"  Valid observations: {valid}")
         if valid > 0:
             print(f"  Mean spread: {components['debt_spread'].mean()*100:.2f} bps")
@@ -446,11 +473,11 @@ if __name__ == "__main__":
     print("=" * 70)
 
     # Load data
-    panel = pd.read_csv('data/merged/slfsi_daily_panel.csv', parse_dates=['date'])
-    print(f"Loaded {len(panel)} daily observations")
+    panel = pd.read_csv('data/merged/slfsi_monthly_panel.csv', parse_dates=['date'])
+    print(f"Loaded {len(panel)} monthly observations")
 
     # Compute monthly FSI
-    fsi_df = compute_mercado_fsi(panel, freq='M')
+    fsi_df = compute_mercado_fsi(panel, freq='M', data_is_monthly=True)
 
     # Save results
     output_path = 'data/merged/mercado_fsi_monthly.csv'
