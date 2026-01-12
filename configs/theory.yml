@@ -1,0 +1,29 @@
+krugman:
+  crisis: 2
+  stress: 4
+  use_net_import_cover: true
+
+reinhart_rogoff:
+  crisis: -20
+  stress: 0
+
+calvo:
+  crisis: 2000
+  stress: 500
+
+columns:
+  net_import_cover: net_import_cover
+  import_cover_months: import_cover_months
+  real_policy_rate: real_policy_rate
+  isb_spread_bps: isb_spread_bps
+  isb_yield: isb_yield
+  us_10y_yield: us_10y_yield
+
+inputs:
+  monthly_with_indicators: data/merged/monthly_with_indicators.csv
+  monthly_panel: data/merged/slfsi_monthly_panel.csv
+  hmm_probs: data/merged/hmm_probs_monthly.csv
+
+outputs:
+  monthly_with_theory: data/merged/monthly_with_theory_regimes.csv
+  theory_vs_hmm: data/merged/theory_vs_hmm_comparison.csv

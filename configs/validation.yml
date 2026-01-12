@@ -1,0 +1,126 @@
+hmm:
+  features:
+    - awcmr
+    - real_policy_rate
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+  n_states: 3
+  covariance_type: diag
+  n_iter: 300
+  random_state: 42
+
+zscore_threshold: 2.0
+
+windows:
+  tactical_months: 1
+  strategic_months: 2
+  false_alarm_days: 60
+
+costs:
+  lambda_missed: 2.0
+  lambda_false: 1.0
+
+enhanced:
+  tau: 0.7
+  k: 3
+  tactical_months: 1
+  strategic_months: 2
+
+run_framework: true
+run_enhanced: true
+
+events:
+  framework:
+    - date: "2022-01-18"
+      name: "$500M ISB Repayment"
+      expected: STRESS
+      type: anchor
+    - date: "2022-03-07"
+      name: "FX Float (CBSL abandons peg)"
+      expected: STRESS
+      type: anchor
+    - date: "2022-04-12"
+      name: "External Debt Suspension (Default)"
+      expected: CRISIS
+      type: anchor
+    - date: "2022-09-01"
+      name: "IMF Staff-Level Agreement"
+      expected: CRISIS
+      type: anchor
+    - date: "2023-03-20"
+      name: "IMF EFF Approval"
+      expected: CRISIS
+      type: anchor
+    - date: "2023-06-28"
+      name: "Domestic Debt Restructuring Plan"
+      expected: STRESS
+      type: anchor
+    - date: "2024-06-26"
+      name: "Official Creditor Committee Agreement"
+      expected: CALM
+      type: anchor
+    - date: "2024-09-19"
+      name: "Bondholder Agreement-in-Principle"
+      expected: CALM
+      type: anchor
+    - date: "2019-04-21"
+      name: "Easter Sunday Attacks"
+      expected: CALM
+      type: shock
+    - date: "2020-03-20"
+      name: "COVID Lockdown Begins"
+      expected: CALM
+      type: shock
+    - date: "2021-04-22"
+      name: "Fertilizer Import Ban"
+      expected: CALM
+      type: shock
+    - date: "2022-07-14"
+      name: "President Resigns"
+      expected: CRISIS
+      type: shock
+  enhanced:
+    - date: "2022-01-18"
+      name: "$500M ISB Repayment"
+      expected: STRESS
+      type: anchor
+    - date: "2022-03-07"
+      name: "FX Float (CBSL abandons peg)"
+      expected: CRISIS
+      type: anchor
+    - date: "2022-04-12"
+      name: "Sovereign Default"
+      expected: CRISIS
+      type: anchor
+    - date: "2022-09-01"
+      name: "IMF Staff-Level Agreement"
+      expected: CRISIS
+      type: anchor
+    - date: "2023-03-20"
+      name: "IMF EFF Approval"
+      expected: CRISIS
+      type: anchor
+    - date: "2023-06-28"
+      name: "Domestic Debt Restructuring"
+      expected: STRESS
+      type: anchor
+    - date: "2024-06-26"
+      name: "Official Creditor Agreement"
+      expected: CALM
+      type: anchor
+    - date: "2019-04-21"
+      name: "Easter Sunday Attacks"
+      expected: STRESS
+      type: shock
+    - date: "2020-03-20"
+      name: "COVID Lockdown"
+      expected: STRESS
+      type: shock
+    - date: "2021-04-22"
+      name: "Fertilizer Import Ban"
+      expected: STRESS
+      type: shock
+    - date: "2022-07-14"
+      name: "President Resigns"
+      expected: CRISIS
+      type: shock

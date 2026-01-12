@@ -1,0 +1,12 @@
+pboc_swap:
+  amount_usd_m: 1500
+  start: "2021-03-01"
+
+monthly_imports_usd_m: 1500
+equilibrium_real_rate: 2.0
+
+stress_thresholds:
+  isb_spread_bps: 1000
+  real_rate_floor: -10
+  net_import_cover: 2
+  composite_score: 1.5

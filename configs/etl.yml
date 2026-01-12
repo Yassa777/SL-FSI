@@ -1,0 +1,75 @@
+date_range:
+  start: "2005-01-01"
+  end: "2025-12-31"
+
+volatility:
+  window: 20
+  min_periods: 10
+
+monthly_imports_usd_m: 1500
+
+pboc_swap:
+  amount_usd_m: 1500
+  start: "2021-03-01"
+
+aggregation:
+  last:
+    - usd_lkr
+    - aspi
+    - sl20_index
+    - gold_usd
+    - gold_lkr
+    - market_cap
+    - awcmr
+    - tbill_primary
+    - tbill_secondary
+    - tbond_yield
+    - isb_yield
+    - policy_ceiling
+    - sdfr
+    - slfr
+    - us_10y_yield
+    - reer_index
+    - gross_reserves_usd_m
+    - net_usable_reserves_usd_m
+    - ncpi_yoy_pct
+    - tourism_earnings_usd_m
+    - remittances_usd_m
+    - gold_premium_pct
+    - interbank_spread
+    - real_policy_rate
+    - yield_curve_slope
+    - import_cover_months
+    - net_import_cover_months
+    - embi_spread_approx
+    - r_fx
+    - r_eq
+    - r_eq_real
+    - turnover_ratio
+  sum:
+    - equity_turnover
+  mean:
+    - vol_fx_20d
+    - vol_eq_20d
+
+historical_overlays:
+  - target: usd_lkr
+    path: data/external/historical_fx.csv
+    date_col: date
+    value_col: usd_lkr
+    frequency: monthly
+  - target: gross_reserves_usd_m
+    path: data/external/historical_reserves.csv
+    date_col: date
+    value_col: gross_reserves_usd_m
+    frequency: monthly
+  - target: ncpi_yoy_pct
+    path: data/external/historical_inflation.csv
+    date_col: date
+    value_col: ncpi_yoy_pct
+    frequency: monthly
+  - target: policy_ceiling
+    path: data/external/historical_policy_rates.csv
+    date_col: date
+    value_col: policy_ceiling
+    frequency: monthly

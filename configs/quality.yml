@@ -1,0 +1,39 @@
+daily:
+  min_coverage_pct: 50
+  max_consecutive_missing: 30
+  critical_columns:
+    - usd_lkr
+    - awcmr
+    - aspi
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+    - policy_ceiling
+
+monthly:
+  min_coverage_pct: 80
+  max_consecutive_missing: 2
+  critical_columns:
+    - awcmr
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+    - policy_ceiling
+
+fail_on_critical: false
+
+crisis_window:
+  start: "2020-01-01"
+  end: "2023-12-31"
+  daily_min_coverage_pct: 50
+  monthly_min_coverage_pct: 80
+  daily_critical_columns:
+    - usd_lkr
+    - awcmr
+    - aspi
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+    - policy_ceiling
+  monthly_critical_columns:
+    - awcmr
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+    - policy_ceiling

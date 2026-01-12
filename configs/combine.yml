@@ -1,0 +1,8 @@
+alpha: 0.5
+stress_threshold: 0.5
+crisis_threshold: 0.7
+fsi_threshold: 1.0
+hmm_threshold: 0.5
+
+outputs:
+  combined: data/merged/combined_fsi_hmm.csv

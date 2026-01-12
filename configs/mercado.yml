@@ -1,0 +1,7 @@
+rolling_window: 36
+empi_lookback: 60
+min_periods: 12
+debt_spread_min_obs: 36
+
+outputs:
+  monthly: data/merged/mercado_fsi_monthly.csv

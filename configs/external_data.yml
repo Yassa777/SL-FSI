@@ -1,0 +1,195 @@
+yfinance:
+  start: "2010-01-01"
+  end: "2025-12-31"
+  interval: "1d"
+
+series:
+  gold_usd:
+    symbol: "GC=F"
+    output: data/external/D6_gold_usd.csv
+    date_col: date
+    value_col: gold_usd_oz
+    required: true
+  us_treasury_10y:
+    symbol: "^TNX"
+    output: data/external/us_treasury_10y.csv
+    date_col: date
+    value_col: us_10y_yield_pct
+    required: true
+
+policy_rates:
+  output_daily: data/external/D10_policy_rates_daily.csv
+  output_changes: data/external/D10_policy_rates_changes.csv
+  date_col: date
+  start: "2019-01-01"
+  end: "2025-12-31"
+  columns:
+    sdfr: sdfr
+    slfr: slfr
+    opr: opr
+    policy_ceiling: policy_ceiling
+    notes: notes
+  changes:
+    - date: "2019-01-01"
+      sdfr: 7.00
+      slfr: 8.00
+      opr: null
+      notes: "Starting point"
+    - date: "2019-05-31"
+      sdfr: 7.00
+      slfr: 8.00
+      opr: null
+      notes: "MPC"
+    - date: "2019-08-22"
+      sdfr: 7.00
+      slfr: 8.00
+      opr: null
+      notes: "MPC"
+    - date: "2020-01-30"
+      sdfr: 6.50
+      slfr: 7.50
+      opr: null
+      notes: "MPC - COVID concerns"
+    - date: "2020-03-16"
+      sdfr: 6.25
+      slfr: 7.25
+      opr: null
+      notes: "Emergency - COVID"
+    - date: "2020-04-03"
+      sdfr: 6.00
+      slfr: 7.00
+      opr: null
+      notes: "Emergency"
+    - date: "2020-04-09"
+      sdfr: 5.50
+      slfr: 6.50
+      opr: null
+      notes: "Emergency"
+    - date: "2020-05-06"
+      sdfr: 5.50
+      slfr: 6.50
+      opr: null
+      notes: "MPC"
+    - date: "2020-07-08"
+      sdfr: 4.50
+      slfr: 5.50
+      opr: null
+      notes: "MPC - Deep cut"
+    - date: "2021-01-27"
+      sdfr: 4.50
+      slfr: 5.50
+      opr: null
+      notes: "MPC - Hold"
+    - date: "2021-08-19"
+      sdfr: 4.50
+      slfr: 5.50
+      opr: null
+      notes: "MPC - Still holding despite pressure"
+    - date: "2022-01-20"
+      sdfr: 5.00
+      slfr: 6.00
+      opr: null
+      notes: "MPC - First hike"
+    - date: "2022-03-04"
+      sdfr: 5.50
+      slfr: 6.50
+      opr: null
+      notes: "Emergency - FX pressure"
+    - date: "2022-04-08"
+      sdfr: 13.50
+      slfr: 14.50
+      opr: null
+      notes: "EMERGENCY - Massive 700bps hike"
+    - date: "2022-07-08"
+      sdfr: 14.50
+      slfr: 15.50
+      opr: null
+      notes: "MPC - Peak rates"
+    - date: "2023-06-01"
+      sdfr: 11.00
+      slfr: 12.00
+      opr: null
+      notes: "MPC - Start cutting"
+    - date: "2023-07-13"
+      sdfr: 10.00
+      slfr: 11.00
+      opr: null
+      notes: "MPC"
+    - date: "2023-10-04"
+      sdfr: 9.00
+      slfr: 10.00
+      opr: null
+      notes: "MPC"
+    - date: "2024-03-26"
+      sdfr: 8.50
+      slfr: 9.50
+      opr: null
+      notes: "MPC"
+    - date: "2024-06-04"
+      sdfr: 8.25
+      slfr: 9.25
+      opr: null
+      notes: "MPC"
+    - date: "2024-09-04"
+      sdfr: null
+      slfr: null
+      opr: 8.00
+      notes: "NEW OPR FRAMEWORK"
+    - date: "2024-11-26"
+      sdfr: null
+      slfr: null
+      opr: 7.75
+      notes: "MPC"
+
+templates:
+  - name: reserves
+    output: data/external/D12_reserves_TEMPLATE.csv
+    date_col: date
+    start: "2015-01-01"
+    periods: 120
+    freq: "ME"
+    date_format: "%Y-%m"
+    columns:
+      gross_reserves_usd_m: null
+      import_cover_months: null
+      notes: ""
+  - name: inflation
+    output: data/external/D13_inflation_TEMPLATE.csv
+    date_col: date
+    start: "2015-01-01"
+    periods: 120
+    freq: "ME"
+    date_format: "%Y-%m"
+    columns:
+      ncpi_index: null
+      ncpi_yoy_pct: null
+      core_inflation_pct: null
+  - name: tourism
+    output: data/external/D17_tourism_TEMPLATE.csv
+    date_col: date
+    start: "2015-01-01"
+    periods: 120
+    freq: "ME"
+    date_format: "%Y-%m"
+    columns:
+      arrivals: null
+      earnings_usd_m: null
+  - name: remittances
+    output: data/external/D18_remittances_TEMPLATE.csv
+    date_col: date
+    start: "2015-01-01"
+    periods: 120
+    freq: "ME"
+    date_format: "%Y-%m"
+    columns:
+      remittances_usd_m: null
+
+manual_instructions:
+  - "D12 (Reserves): https://www.cbsl.gov.lk/cbsl_custom/data/library/index.php"
+  - "Category: External Sector -> International Reserves"
+  - "D13 (Inflation): http://www.statistics.gov.lk/InflationAndPrices"
+  - "Download monthly NCPI bulletins"
+  - "D17 (Tourism): https://www.sltda.gov.lk/en/statistics"
+  - "Monthly arrival statistics"
+  - "D18 (Remittances): CBSL Data Library -> External Sector -> Balance of Payments"
+  - "Workers' Remittances"

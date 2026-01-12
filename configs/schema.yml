@@ -1,0 +1,119 @@
+columns:
+  date: date
+  year_month: year_month
+  period: period
+
+  usd_lkr: usd_lkr
+  awcmr: awcmr
+  aspi: aspi
+  equity_turnover: equity_turnover
+  market_cap: market_cap
+  sl20_index: sl20_index
+  gold_lkr: gold_lkr
+  gold_usd: gold_usd
+  tbill_primary: tbill_primary
+  tbill_secondary: tbill_secondary
+  tbond_yield: tbond_yield
+  isb_yield: isb_yield
+  us_10y_yield: us_10y_yield
+
+  sdfr: sdfr
+  slfr: slfr
+  opr: opr
+  policy_ceiling: policy_ceiling
+  gross_reserves_usd_m: gross_reserves_usd_m
+  net_usable_reserves_usd_m: net_usable_reserves_usd_m
+  ncpi_yoy_pct: ncpi_yoy_pct
+  reer_index: reer_index
+  tourism_earnings_usd_m: tourism_earnings_usd_m
+  remittances_usd_m: remittances_usd_m
+
+  r_fx: r_fx
+  vol_fx_20d: vol_fx_20d
+  r_eq: r_eq
+  vol_eq_20d: vol_eq_20d
+  r_eq_real: r_eq_real
+  implied_fx: implied_fx
+  gold_premium_pct: gold_premium_pct
+  reserve_slope_3m: reserve_slope_3m
+  import_cover_months: import_cover_months
+  net_import_cover_months: net_import_cover_months
+  interbank_spread: interbank_spread
+  real_policy_rate: real_policy_rate
+  yield_curve_slope: yield_curve_slope
+  turnover_ratio: turnover_ratio
+  embi_spread_approx: embi_spread_approx
+
+  regime: regime
+  regime_label: regime_label
+  regime_realtime: regime_realtime
+  p_calm: p_calm
+  p_stress: p_stress
+  p_crisis: p_crisis
+  confidence: confidence
+
+  country: country
+  inflation_yoy: inflation_yoy
+  reserves_usd_m: reserves_usd_m
+  policy_rate: policy_rate
+  kibor: kibor
+  interbank_rate: interbank_rate
+
+groups:
+  market_daily:
+    - usd_lkr
+    - awcmr
+    - aspi
+    - equity_turnover
+    - market_cap
+    - sl20_index
+    - gold_lkr
+    - gold_usd
+    - tbill_primary
+    - tbill_secondary
+    - tbond_yield
+    - isb_yield
+    - us_10y_yield
+  macro_monthly:
+    - gross_reserves_usd_m
+    - ncpi_yoy_pct
+    - reer_index
+    - tourism_earnings_usd_m
+    - remittances_usd_m
+    - policy_ceiling
+    - sdfr
+    - slfr
+    - opr
+  derived_daily:
+    - r_fx
+    - vol_fx_20d
+    - r_eq
+    - vol_eq_20d
+    - r_eq_real
+    - implied_fx
+    - gold_premium_pct
+    - reserve_slope_3m
+    - import_cover_months
+    - net_usable_reserves_usd_m
+    - net_import_cover_months
+    - interbank_spread
+    - real_policy_rate
+    - yield_curve_slope
+    - turnover_ratio
+    - embi_spread_approx
+  hmm_outputs:
+    - regime
+    - regime_label
+    - regime_realtime
+    - p_calm
+    - p_stress
+    - p_crisis
+    - confidence
+  cross_country:
+    - country
+    - inflation_yoy
+    - reserves_usd_m
+    - policy_rate
+    - real_policy_rate
+    - kibor
+    - interbank_rate

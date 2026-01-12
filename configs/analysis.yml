@@ -1,0 +1,136 @@
+compare_fsi_hmm:
+  fsi_path: data/merged/mercado_fsi_monthly.csv
+  hmm_path: data/merged/hmm_regimes_3state_monthly.csv
+  fsi_column: fsi_variance_equal
+  component_columns:
+    - banking_beta_std
+    - equity_returns_inv_std
+    - equity_volatility_std
+    - debt_spread_std
+    - empi_std
+  thresholds:
+    - -0.5
+    - 0.0
+    - 0.5
+    - 1.0
+    - 1.5
+  stress_threshold: 0.3
+  crisis_threshold: 1.0
+  events:
+    - date: "2019-04-01"
+      label: "Easter Bombing"
+    - date: "2020-03-01"
+      label: "COVID Lockdown"
+    - date: "2021-07-01"
+      label: "Reserves Crisis Begins"
+    - date: "2022-04-01"
+      label: "Debt Default"
+    - date: "2022-09-01"
+      label: "Peak Inflation"
+  outputs:
+    plot: figures/fsi_hmm_comparison.png
+
+feature_overlap:
+  start: "2020-01-01"
+  end: "2024-12-31"
+  min_overlap_pct: 50
+  min_overlap_days: 500
+  min_features: 3
+  min_feature_coverage_pct: 30
+  high_coverage_pct: 50
+  hmm_test:
+    enabled: true
+    n_states:
+      - 2
+      - 3
+    n_iter: 100
+    covariance_type: full
+  categories:
+    FX & Currency:
+      - usd_lkr
+      - r_fx
+      - vol_fx_20d
+      - reer_index
+      - gold_premium_pct
+      - implied_fx
+    Equity Market:
+      - aspi
+      - sl20_index
+      - r_eq
+      - vol_eq_20d
+      - r_eq_real
+      - equity_turnover
+      - market_cap
+      - turnover_ratio
+    Interest Rates:
+      - awcmr
+      - sdfr
+      - slfr
+      - policy_ceiling
+      - tbill_primary
+      - tbill_secondary
+      - tbond_yield
+      - real_policy_rate
+      - interbank_spread
+      - yield_curve_slope
+    External Sector:
+      - gross_reserves_usd_m
+      - reserve_slope_3m
+      - import_cover_months
+      - tourism_earnings_usd_m
+      - remittances_usd_m
+    Sovereign Risk:
+      - isb_yield
+      - embi_spread_approx
+      - us_10y_yield
+    Commodities:
+      - gold_usd
+      - gold_lkr
+    Inflation:
+      - ncpi_yoy_pct
+  outputs:
+    regimes: data/merged/hmm_regimes_working.csv
+
+transitions:
+  regimes_path: data/merged/hmm_regimes_3state_monthly.csv
+  daily_path: data/merged/slfsi_daily_panel.csv
+  key_dates:
+    stress_start: "2021-07-01"
+    crisis_start: "2022-04-01"
+    default_date: "2022-04-12"
+    crisis_end: "2023-04-01"
+  thresholds:
+    gross_reserves_usd_m:
+      critical: 2000
+      warning: 3000
+      direction: below
+    ncpi_yoy_pct:
+      critical: 25
+      warning: 15
+      direction: above
+    real_policy_rate:
+      critical: -20
+      warning: -10
+      direction: below
+    awcmr:
+      critical: 14
+      warning: 10
+      direction: above
+  outputs:
+    breach_timeline: data/merged/threshold_breach_timeline.csv
+    summary: data/merged/threshold_summary.csv
+
+three_panel:
+  fsi_path: data/merged/mercado_fsi_monthly.csv
+  hmm_probs_path: data/merged/hmm_probs_monthly.csv
+  combined_path: data/merged/combined_fsi_hmm.csv
+  events:
+    - date: "2022-04-12"
+      label: "Sovereign Default"
+    - date: "2021-07-01"
+      label: "Reserves Crisis"
+    - date: "2023-07-01"
+      label: "Recovery Begins"
+  outputs:
+    plot: figures/three_panel_comparison.png
+    plot_hires: figures/three_panel_comparison_hires.png

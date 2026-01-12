@@ -1,0 +1,46 @@
+date_range:
+  start: "2005-01-01"
+  end: "2024-12-31"
+
+fred_fx:
+  series_id: "EXSLUS"
+  source: "fred"
+  fetch_start: "2000-01-01"
+  date_col: date
+  value_col: usd_lkr
+  output: data/external/historical_fx.csv
+  required: true
+
+inflation:
+  annual_path: data/external/D13_inflation_annual_fred.csv
+  annual_date_col: date
+  annual_value_col: inflation_yoy_pct
+  monthly_reference_path: data/external/D13_inflation_monthly_compiled.csv
+  monthly_date_col: date
+  monthly_value_col: ncpi_yoy_pct
+  output: data/external/historical_inflation.csv
+  date_col: date
+  value_col: ncpi_yoy_pct
+  source_col: source
+  source_note: "Interpolated from FRED annual with seasonal adjustment"
+
+reserves:
+  world_bank:
+    country: "LK"
+    indicator: "FI.RES.TOTL.CD"
+    start_year: 2004
+    end_year: 2024
+  output: data/external/historical_reserves.csv
+  date_col: date
+  value_col: gross_reserves_usd_m
+  source_col: source
+  source_note: "Interpolated from World Bank annual"
+  scale: 1000000
+
+awcmr:
+  path: data/external/awcmr_monthly_cbsl.csv
+  date_col: date
+
+documentation:
+  output: DOCS/data/external/HISTORICAL_DATA_METHODOLOGY.md
+  template: DOCS/configs/historical_doc.md

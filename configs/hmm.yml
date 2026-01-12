@@ -1,0 +1,96 @@
+features:
+  - awcmr
+  - real_policy_rate
+  - gross_reserves_usd_m
+  - ncpi_yoy_pct
+
+model:
+  n_states: 3
+  covariance_type: diag
+  n_iter: 300
+  random_state: 42
+
+outputs:
+  full_sample: data/merged/hmm_regimes_3state_monthly.csv
+
+monthly_aggregation:
+  method: first
+  interpolate: linear
+  fill_edges: true
+
+realtime:
+  start: "2018-01-01"
+  eval_start: "2018-06-01"
+  min_training_months: 12
+  stable_window_months: 3
+  key_events:
+    - month: "2019-04"
+      label: "Easter Bombing"
+    - month: "2020-03"
+      label: "COVID Lockdown"
+    - month: "2021-07"
+      label: "STRESS begins (full-sample)"
+    - month: "2022-01"
+      label: "$500M ISB repayment"
+    - month: "2022-03"
+      label: "FX Float"
+    - month: "2022-04"
+      label: "Sovereign Default"
+    - month: "2023-03"
+      label: "IMF EFF Approval"
+    - month: "2023-07"
+      label: "CALM returns (full-sample)"
+  outputs:
+    probs: data/merged/hmm_probs_monthly.csv
+    recursive: data/merged/recursive_realtime_results.csv
+    comparison: data/merged/realtime_vs_fullsample_comparison.csv
+    full_sample_path: data/merged/hmm_regimes_3state_monthly.csv
+
+oos:
+  train_start: "2005-01-01"
+  train_end: "2019-12-31"
+  test_start: "2020-01-01"
+  test_end: "2025-12-31"
+  default_date: "2022-04-12"
+  expected_events:
+    - date: "2020-03-01"
+      label: "COVID Lockdown"
+      expected: STRESS
+    - date: "2021-07-01"
+      label: "STRESS begins"
+      expected: STRESS
+    - date: "2022-01-01"
+      label: "$500M ISB"
+      expected: CRISIS
+    - date: "2022-04-01"
+      label: "Default"
+      expected: CRISIS
+    - date: "2022-09-01"
+      label: "Peak Inflation"
+      expected: CRISIS
+    - date: "2023-03-01"
+      label: "IMF EFF"
+      expected: CRISIS
+    - date: "2024-06-01"
+      label: "OCA Agreement"
+      expected: CALM
+  calibration:
+    thresholds:
+      - 0.5
+      - 0.6
+      - 0.7
+      - 0.8
+      - 0.9
+    truth_windows:
+      - start: "2022-04-01"
+        end: "2023-03-31"
+        regime: CRISIS
+      - start: "2021-07-01"
+        end: "2022-03-31"
+        regime: STRESS
+      - start: "2024-01-01"
+        end: "2025-12-31"
+        regime: CALM
+  outputs:
+    predictions: data/merged/oos_predictions.csv
+    params: data/merged/oos_model_params.json

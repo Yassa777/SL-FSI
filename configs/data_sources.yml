@@ -1,0 +1,119 @@
+sources:
+  usd_lkr:
+    path: data/processed/D1_usd_lkr.csv
+    date_col: date
+    rename:
+      USD_Spot_Rate: usd_lkr
+    frequency: daily
+    optional: false
+  awcmr_monthly:
+    path: data/external/awcmr_monthly_cbsl.csv
+    date_col: date
+    rename:
+      awcmr_monthly: awcmr
+    keep_columns:
+      - awcmr
+    frequency: monthly
+  awcmr_daily_fallback:
+    path: data/processed/D2_awcmr.csv
+    date_col: date
+    rename:
+      Average_Weighted_Call_Money_Rate: awcmr
+    frequency: daily
+  aspi:
+    path: data/processed/D3_aspi.csv
+    date_col: date
+    rename:
+      EQUITY__All_share_price_index: aspi
+    frequency: daily
+  equity_turnover:
+    path: data/processed/D4_turnover.csv
+    date_col: date
+    rename:
+      EQUITY__Daily_Turnover: equity_turnover
+    frequency: daily
+  market_cap:
+    path: data/processed/D5_market_cap.csv
+    date_col: date
+    rename:
+      EQUITY_Market_Capitalization: market_cap
+    frequency: daily
+  sl20_gold:
+    path: data/processed/D6_D7_sl20_gold.csv
+    date_col: date
+    rename:
+      EQUITY_S&P_SL20_Index: sl20_index
+      Gold_Price: gold_lkr
+    frequency: daily
+  tbills:
+    path: data/processed/D8_tbills.csv
+    date_col: date
+    rename_contains:
+      Primary: tbill_primary
+      Secondary: tbill_secondary
+    frequency: daily
+  tbonds:
+    path: data/processed/D9_tbonds.csv
+    date_col: date
+    rename_contains:
+      Secondary: tbond_yield
+    frequency: daily
+  isb:
+    path: data/processed/D15_isb.csv
+    date_col: date
+    rename_contains:
+      ISB: isb_yield
+    frequency: daily
+  reer:
+    path: data/processed/D14_reer_nfa.csv
+    date_col: date
+    rename:
+      Real_Effective_Exchange_Rate_Index: reer_index
+    keep_columns:
+      - reer_index
+    frequency: monthly
+  gold_usd:
+    path: data/external/D6_gold_usd.csv
+    date_col: date
+    rename:
+      gold_usd_oz: gold_usd
+    frequency: daily
+  policy_rates:
+    path: data/external/D10_policy_rates_daily.csv
+    date_col: date
+    keep_columns:
+      - sdfr
+      - slfr
+      - opr
+      - policy_ceiling
+    frequency: daily
+  reserves:
+    path: data/external/D12_reserves_compiled.csv
+    date_col: date
+    keep_columns:
+      - gross_reserves_usd_m
+    frequency: monthly
+  inflation:
+    path: data/external/D13_inflation_monthly_compiled.csv
+    date_col: date
+    keep_columns:
+      - ncpi_yoy_pct
+    frequency: monthly
+  tourism:
+    path: data/external/D17_tourism.csv
+    date_col: date
+    keep_columns:
+      - tourism_earnings_usd_m
+    frequency: monthly
+  remittances:
+    path: data/external/D18_remittances.csv
+    date_col: date
+    keep_columns:
+      - remittances_usd_m
+    frequency: monthly
+  us_treasury:
+    path: data/external/us_treasury_10y.csv
+    date_col: date
+    rename:
+      us_10y_yield_pct: us_10y_yield
+    frequency: daily

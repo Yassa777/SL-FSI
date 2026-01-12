@@ -10,6 +10,16 @@ import ruptures as rpt
 import warnings
 warnings.filterwarnings('ignore')
 
+from slfsi.config.loader import load_config
+from slfsi.config.schema import load_schema
+from slfsi.config.settings import Settings
+from slfsi.models.hmm.fit import HMMModelConfig, fit_hmm_with_probs, prepare_monthly_features
+
+settings = Settings.default()
+schema, _ = load_schema(settings.configs_dir / "schema.yml")
+app_config = load_config(settings.configs_dir / "app.yml")
+hmm_config = load_config(settings.configs_dir / "hmm.yml")
+
 # Page config
 st.set_page_config(
     page_title="SL-FSI Regime Analysis",
@@ -24,12 +34,14 @@ st.markdown("**Validated 3-State HMM for Crisis Detection**")
 # Load data
 @st.cache_data
 def load_data():
-    daily = pd.read_csv('data/merged/slfsi_daily_panel.csv', parse_dates=['date'])
-    monthly = pd.read_csv('data/merged/slfsi_monthly_panel.csv', parse_dates=['date'])
+    daily = pd.read_csv(settings.merged_dir / "slfsi_daily_panel.csv", parse_dates=[schema.date])
+    monthly = pd.read_csv(settings.merged_dir / "slfsi_monthly_panel.csv", parse_dates=[schema.date])
 
     # Try to load pre-computed validated regimes
     try:
-        validated = pd.read_csv('data/merged/monthly_regimes_validated.csv', parse_dates=['date'])
+        validated = pd.read_csv(
+            settings.merged_dir / "monthly_regimes_validated.csv", parse_dates=[schema.date]
+        )
     except:
         validated = None
 
@@ -39,77 +51,29 @@ daily_df, monthly_df, validated_df = load_data()
 
 # Prepare monthly data for 3-state HMM
 @st.cache_data
-def prepare_monthly_hmm_data(daily):
+def prepare_monthly_hmm_data(daily, features):
     """Prepare monthly aggregated data for the validated 3-state HMM."""
-    features = ['awcmr', 'real_policy_rate', 'gross_reserves_usd_m', 'ncpi_yoy_pct']
-    daily['year_month'] = daily['date'].dt.to_period('M')
-    monthly = daily.groupby('year_month')[features + ['date']].first().reset_index(drop=True)
-    monthly = monthly.dropna()
-    return monthly, features
+    agg_cfg = hmm_config.get("monthly_aggregation", {})
+    monthly = prepare_monthly_features(
+        daily,
+        features,
+        schema.date,
+        method=str(agg_cfg.get("method", "first")),
+        interpolate=agg_cfg.get("interpolate", "linear"),
+        fill_edges=bool(agg_cfg.get("fill_edges", True)),
+    )
+    return monthly
 
-monthly_hmm_data, HMM_FEATURES = prepare_monthly_hmm_data(daily_df)
+HMM_FEATURES = hmm_config.get("features", [])
+monthly_hmm_data = prepare_monthly_hmm_data(daily_df, HMM_FEATURES)
 
-# Define the 18 core data streams
-DATA_STREAMS = {
-    'D1 - USD/LKR Exchange Rate': 'usd_lkr',
-    'D2 - AWCMR (Interbank Rate)': 'awcmr',
-    'D3 - ASPI (Equity Index)': 'aspi',
-    'D4 - Equity Daily Turnover': 'equity_turnover',
-    'D5 - Market Capitalization': 'market_cap',
-    'D6 - S&P SL20 Index': 'sl20_index',
-    'D7 - Local Gold Price': 'gold_lkr',
-    'D6 Global - Gold Price USD': 'gold_usd',
-    'D8 - T-Bill Yields': 'tbill_primary',
-    'D9 - T-Bond Yields': 'tbond_yield',
-    'D10 - Policy Rate (SDFR)': 'sdfr',
-    'D12 - FX Reserves': 'gross_reserves_usd_m',
-    'D13 - NCPI Inflation': 'ncpi_yoy_pct',
-    'D14 - REER Index': 'reer_index',
-    'D15 - ISB Yields': 'isb_yield',
-    'D17 - Tourism Earnings': 'tourism_earnings_usd_m',
-    'D18 - Worker Remittances': 'remittances_usd_m',
-    'Helper - US 10Y Yield': 'us_10y_yield'
-}
-
-# Derived features
-DERIVED_FEATURES = {
-    'FX Return': 'r_fx',
-    'FX Volatility (20d)': 'vol_fx_20d',
-    'Equity Return': 'r_eq',
-    'Equity Volatility (20d)': 'vol_eq_20d',
-    'Real Equity Return': 'r_eq_real',
-    'Gold Premium %': 'gold_premium_pct',
-    'Interbank Spread': 'interbank_spread',
-    'Real Policy Rate': 'real_policy_rate',
-    'Import Cover (months)': 'import_cover_months',
-    'Reserve Slope (3m)': 'reserve_slope_3m',
-    'Turnover Ratio': 'turnover_ratio',
-    'EMBI Spread (approx)': 'embi_spread_approx'
-}
-
-# Extended crisis markers (all key events)
+DATA_STREAMS = app_config.get("data_streams", {})
+DERIVED_FEATURES = app_config.get("derived_features", {})
 ALL_EVENTS = {
-    '2019-04-21': {'name': 'Easter Sunday Attacks', 'color': 'purple', 'type': 'shock'},
-    '2020-03-20': {'name': 'COVID Lockdown', 'color': 'purple', 'type': 'shock'},
-    '2021-04-22': {'name': 'Fertilizer Ban', 'color': 'purple', 'type': 'shock'},
-    '2021-07-01': {'name': 'STRESS Regime Begins', 'color': 'orange', 'type': 'regime'},
-    '2022-01-18': {'name': '$500M ISB Repayment', 'color': 'red', 'type': 'anchor'},
-    '2022-03-07': {'name': 'FX Float', 'color': 'red', 'type': 'anchor'},
-    '2022-04-01': {'name': 'CRISIS Regime Begins', 'color': 'darkred', 'type': 'regime'},
-    '2022-04-12': {'name': 'Sovereign Default', 'color': 'red', 'type': 'anchor'},
-    '2022-07-14': {'name': 'President Resigns', 'color': 'purple', 'type': 'shock'},
-    '2022-09-01': {'name': 'IMF Staff Agreement', 'color': 'blue', 'type': 'anchor'},
-    '2023-03-20': {'name': 'IMF EFF Approval', 'color': 'blue', 'type': 'anchor'},
-    '2023-07-01': {'name': 'CALM Regime Returns', 'color': 'green', 'type': 'regime'},
+    event["date"]: {"name": event["name"], "color": event["color"], "type": event["type"]}
+    for event in app_config.get("events", [])
 }
-
-# Simplified crisis dates for backward compatibility
-CRISIS_DATES = {
-    'FX Float (2022-03-07)': '2022-03-07',
-    'Sovereign Default (2022-04-12)': '2022-04-12',
-    'Peak Inflation (2022-09-15)': '2022-09-15',
-    'IMF EFF (2023-03-20)': '2023-03-20'
-}
+CRISIS_DATES = app_config.get("crisis_dates", {})
 
 # Sidebar
 st.sidebar.header("Analysis Settings")
@@ -138,22 +102,15 @@ if analysis_type == "🎯 Validated 3-State Model":
     @st.cache_data
     def fit_validated_3state_hmm(monthly_data, features):
         """Fit the validated 3-state monthly HMM."""
-        X = monthly_data[features].values
-        X_scaled = (X - X.mean(axis=0)) / X.std(axis=0)
-
-        model = hmm.GaussianHMM(n_components=3, covariance_type="diag", n_iter=300, random_state=42)
-        model.fit(X_scaled)
-        states = model.predict(X_scaled)
-
-        # Label regimes by inflation level
-        result = monthly_data.copy()
-        result['regime'] = states
-
-        state_inflation = {s: result[result['regime'] == s]['ncpi_yoy_pct'].mean() for s in range(3)}
-        sorted_states = sorted(state_inflation.keys(), key=lambda x: state_inflation[x])
-        state_labels = {sorted_states[0]: 'CALM', sorted_states[1]: 'STRESS', sorted_states[2]: 'CRISIS'}
-        result['regime_label'] = result['regime'].map(state_labels)
-
+        model_cfg = hmm_config.get("model", {})
+        hmm_cfg = HMMModelConfig(
+            features=tuple(features),
+            n_states=int(model_cfg.get("n_states", 3)),
+            covariance_type=str(model_cfg.get("covariance_type", "diag")),
+            n_iter=int(model_cfg.get("n_iter", 300)),
+            random_state=int(model_cfg.get("random_state", 42)),
+        )
+        result, model, state_labels = fit_hmm_with_probs(monthly_data, hmm_cfg, schema)
         return result, model, state_labels
 
     result_df, model, state_labels = fit_validated_3state_hmm(monthly_hmm_data, HMM_FEATURES)
@@ -325,7 +282,7 @@ if analysis_type == "🎯 Validated 3-State Model":
 
     # Load validation results if available
     try:
-        validation_results = pd.read_csv('data/merged/validation_results.csv')
+        validation_results = pd.read_csv(settings.merged_dir / "validation_results.csv")
         validation_results['Status'] = validation_results['hit'].apply(lambda x: '✓' if x else '✗')
         st.dataframe(
             validation_results[['date', 'name', 'expected', 'detected', 'Status']].rename(
@@ -378,7 +335,9 @@ elif analysis_type == "📈 Mercado FSI":
     @st.cache_data
     def load_fsi_data():
         try:
-            fsi = pd.read_csv('data/merged/mercado_fsi_monthly.csv', parse_dates=['date'])
+            fsi = pd.read_csv(
+                settings.merged_dir / "mercado_fsi_monthly.csv", parse_dates=[schema.date]
+            )
             return fsi
         except Exception as e:
             st.error(f"Could not load FSI data: {e}")
@@ -571,7 +530,9 @@ elif analysis_type == "🔮 Recursive HMM":
     @st.cache_data
     def load_recursive_hmm():
         try:
-            hmm_probs = pd.read_csv('data/merged/hmm_probs_monthly.csv', parse_dates=['date'])
+            hmm_probs = pd.read_csv(
+                settings.merged_dir / "hmm_probs_monthly.csv", parse_dates=[schema.date]
+            )
             return hmm_probs
         except Exception as e:
             st.error(f"Could not load recursive HMM data: {e}")
@@ -708,7 +669,7 @@ elif analysis_type == "🔮 Recursive HMM":
 
         # Load validation results if available
         try:
-            comparison = pd.read_csv('data/merged/realtime_vs_fullsample_comparison.csv')
+            comparison = pd.read_csv(settings.merged_dir / "realtime_vs_fullsample_comparison.csv")
 
             col1, col2 = st.columns(2)
             with col1:
@@ -802,7 +763,9 @@ elif analysis_type == "⚖️ FSI vs HMM Comparison":
     @st.cache_data
     def load_combined_data():
         try:
-            combined = pd.read_csv('data/merged/combined_fsi_hmm.csv', parse_dates=['date'])
+            combined = pd.read_csv(
+                settings.merged_dir / "combined_fsi_hmm.csv", parse_dates=[schema.date]
+            )
             return combined
         except Exception as e:
             st.error(f"Could not load combined data: {e}")

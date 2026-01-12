@@ -1,0 +1,89 @@
+data_streams:
+  "D1 - USD/LKR Exchange Rate": usd_lkr
+  "D2 - AWCMR (Interbank Rate)": awcmr
+  "D3 - ASPI (Equity Index)": aspi
+  "D4 - Equity Daily Turnover": equity_turnover
+  "D5 - Market Capitalization": market_cap
+  "D6 - S&P SL20 Index": sl20_index
+  "D7 - Local Gold Price": gold_lkr
+  "D6 Global - Gold Price USD": gold_usd
+  "D8 - T-Bill Yields": tbill_primary
+  "D9 - T-Bond Yields": tbond_yield
+  "D10 - Policy Rate (SDFR)": sdfr
+  "D12 - FX Reserves": gross_reserves_usd_m
+  "D13 - NCPI Inflation": ncpi_yoy_pct
+  "D14 - REER Index": reer_index
+  "D15 - ISB Yields": isb_yield
+  "D17 - Tourism Earnings": tourism_earnings_usd_m
+  "D18 - Worker Remittances": remittances_usd_m
+  "Helper - US 10Y Yield": us_10y_yield
+
+derived_features:
+  "FX Return": r_fx
+  "FX Volatility (20d)": vol_fx_20d
+  "Equity Return": r_eq
+  "Equity Volatility (20d)": vol_eq_20d
+  "Real Equity Return": r_eq_real
+  "Gold Premium %": gold_premium_pct
+  "Interbank Spread": interbank_spread
+  "Real Policy Rate": real_policy_rate
+  "Import Cover (months)": import_cover_months
+  "Reserve Slope (3m)": reserve_slope_3m
+  "Turnover Ratio": turnover_ratio
+  "EMBI Spread (approx)": embi_spread_approx
+
+events:
+  - date: "2019-04-21"
+    name: "Easter Sunday Attacks"
+    color: "purple"
+    type: "shock"
+  - date: "2020-03-20"
+    name: "COVID Lockdown"
+    color: "purple"
+    type: "shock"
+  - date: "2021-04-22"
+    name: "Fertilizer Ban"
+    color: "purple"
+    type: "shock"
+  - date: "2021-07-01"
+    name: "STRESS Regime Begins"
+    color: "orange"
+    type: "regime"
+  - date: "2022-01-18"
+    name: "$500M ISB Repayment"
+    color: "red"
+    type: "anchor"
+  - date: "2022-03-07"
+    name: "FX Float"
+    color: "red"
+    type: "anchor"
+  - date: "2022-04-01"
+    name: "CRISIS Regime Begins"
+    color: "darkred"
+    type: "regime"
+  - date: "2022-04-12"
+    name: "Sovereign Default"
+    color: "red"
+    type: "anchor"
+  - date: "2022-07-14"
+    name: "President Resigns"
+    color: "purple"
+    type: "shock"
+  - date: "2022-09-01"
+    name: "IMF Staff Agreement"
+    color: "blue"
+    type: "anchor"
+  - date: "2023-03-20"
+    name: "IMF EFF Approval"
+    color: "blue"
+    type: "anchor"
+  - date: "2023-07-01"
+    name: "CALM Regime Returns"
+    color: "green"
+    type: "regime"
+
+crisis_dates:
+  "FX Float (2022-03-07)": "2022-03-07"
+  "Sovereign Default (2022-04-12)": "2022-04-12"
+  "Peak Inflation (2022-09-15)": "2022-09-15"
+  "IMF EFF (2023-03-20)": "2023-03-20"
