@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-02-05 14:04:25.264659",
+  "source": "data/merged/reserves_forecasting_panel.csv",
+  "splits": {
+    "train_end": "2019-12-01",
+    "validation_end": "2022-12-01",
+    "test_start": "2023-01-01"
+  },
+  "arima": {
+    "rows": 252,
+    "train_rows": 180,
+    "validation_rows": 36,
+    "test_rows": 36,
+    "d_recommendation": 1,
+    "arima_exog_vars": [
+      "exports_usd_m",
+      "imports_usd_m",
+      "remittances_usd_m",
+      "usd_lkr"
+    ]
+  },
+  "vecm": {
+    "variables": [
+      "gross_reserves_usd_m",
+      "exports_usd_m",
+      "imports_usd_m",
+      "remittances_usd_m",
+      "usd_lkr"
+    ],
+    "rows_levels": 199,
+    "rows_state": 198,
+    "suitable_for_vecm": true,
+    "ect_metadata": {
+      "cointegration_vector": [
+        1.0,
+        -15.378853940868902,
+        -0.26722972483716656,
+        1.660872266018056,
+        32.66116581069963
+      ],
+      "k_ar_diff": 11,
+      "trace_stats": [
+        79.15855276777022,
+        41.38138547186453,
+        21.25888018482382,
+        8.652628965968875,
+        0.03216926550987208
+      ],
+      "trace_cv_95": [
+        69.8189,
+        47.8545,
+        29.7961,
+        15.4943,
+        3.8415
+      ]
+    }
+  },
+  "ms_var": {
+    "variables": [
+      "gross_reserves_usd_m",
+      "usd_lkr",
+      "exports_usd_m",
+      "imports_usd_m"
+    ],
+    "rows": 223,
+    "suitable_for_ms_var": true,
+    "standardized_on": "train_split"
+  }
+}
